@@ -38,19 +38,19 @@ class InvestController {
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping(value = ["client/{idClient}/fund/{idFund}"])
     fun create(@PathVariable idClient: Int, @PathVariable idFund: Int, @RequestBody invest: Invest?): Invest? {
-        val client = clientRepository?.findById(idClient)?.orElse(null)
-        val fund = fundRepository?.findById(idFund)?.orElse(null)
-        return if (invest != null && client != null && fund != null) {
-            if(invest.cashInvest < fund.minInvest){
-               null
-            }
-            updateClientFundCash(client, fund, invest)
+        val client = clientRepository!!.findById(idClient).orElse(null)
+        val fund = fundRepository!!.findById(idFund).orElse(null)
+        if (invest != null && client != null && fund != null) {
             invest.idClient = client
             invest.idFund = fund
-            investRepository?.save(invest)
-        } else {
-            null
+            if (invest.cashInvest >= invest.idFund.minInvest) {
+                updateClientFundCash(client, fund, invest)
+                invest.idClient = client
+                invest.idFund = fund
+                return investRepository!!.save(invest)
+            }
         }
+        return null
     }
 
     @PutMapping(value = ["{idInvest}/client/{idClient}/fund/{idFund}"])
@@ -60,23 +60,23 @@ class InvestController {
         @PathVariable idFund: Int,
         @RequestBody newInvest: Invest?
     ): Invest? {
-        val invest = investRepository?.findById(idInvest)?.orElse(null)
-        val newClient = clientRepository?.findById(idClient)?.orElse(null)
-        val newFund = fundRepository?.findById(idFund)?.orElse(null)
-        return if (invest != null && newInvest != null && newClient != null && newFund != null) {
-            if(invest.cashInvest < newFund.minInvest){
-                null
+        val invest = investRepository!!.findById(idInvest).orElse(null)
+        val newClient = clientRepository!!.findById(idClient).orElse(null)
+        val newFund = fundRepository!!.findById(idFund).orElse(null)
+        if (invest != null && newInvest != null && newClient != null && newFund != null) {
+            newInvest.idClient = newClient
+            newInvest.idFund = newFund
+            if (newInvest.cashInvest >= newInvest.idFund.minInvest) {
+                updateClientCash(newClient, invest, newInvest)
+                updateFundCash(newFund, invest, newInvest)
+                invest.idInvest = newInvest.idInvest
+                invest.cashInvest = newInvest.cashInvest
+                invest.idClient = newClient
+                invest.idFund = newFund
+                return investRepository!!.save(invest)
             }
-            updateClientCash(newClient, invest, newInvest)
-            updateFundCash(newFund, invest, newInvest)
-            invest.idInvest = newInvest.idInvest
-            invest.cashInvest = newInvest.cashInvest
-            invest.idClient = newClient
-            invest.idFund = newFund
-            investRepository?.save(invest)
-        } else {
-            null
         }
+        return null
     }
 
     @ResponseStatus(HttpStatus.NO_CONTENT)

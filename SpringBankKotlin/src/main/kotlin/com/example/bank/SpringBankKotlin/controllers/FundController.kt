@@ -1,6 +1,8 @@
 package com.example.bank.SpringBankKotlin.controllers
 
 import com.example.bank.SpringBankKotlin.models.Fund
+import com.example.bank.SpringBankKotlin.models.Client
+import com.example.bank.SpringBankKotlin.repositories.ClientRepository
 import com.example.bank.SpringBankKotlin.repositories.FundRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -15,6 +17,9 @@ class FundController {
     @Autowired
     private val fundRepository: FundRepository? = null
 
+    @Autowired
+    private val clientRepository: ClientRepository? = null
+
     @GetMapping(value = [""])
     fun findAll(): List<Fund?>? {
         return fundRepository!!.findAll()
@@ -26,23 +31,27 @@ class FundController {
     }
 
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping(value = [""])
-    fun create(@RequestBody fund: Fund?): Fund? {
-        return if (fund != null) {
+    @PostMapping(value = ["/client/{idClient}"])
+    fun create(@RequestBody fund: Fund?, @PathVariable idClient: Int): Fund? {
+        val client: Client = clientRepository!!.findById(idClient).orElse(null)
+        return if (fund != null && client != null) {
+            fund.idClient = client
             fundRepository?.save(fund)
         } else {
             null
         }
     }
 
-    @PutMapping(value = ["{id}"])
-    fun update(@PathVariable id: Int, @RequestBody newFund: Fund?): Fund? {
-        val fund = fundRepository?.findById(id)?.orElse(null)
+    @PutMapping(value = ["{idFund}/client/{idClient}"])
+    fun update(@PathVariable idFund: Int, @PathVariable idClient: Int, @RequestBody newFund: Fund?): Fund? {
+        val fund = fundRepository?.findById(idFund)?.orElse(null)
+        val client: Client = clientRepository!!.findById(idClient).orElse(null)
         return if (fund != null && newFund != null) {
             fund.idFund = newFund.idFund
             fund.name = newFund.name
             fund.minInvest = newFund.minInvest
             fund.totalCash = newFund.totalCash
+            fund.idClient = client
             fundRepository?.save(fund)
         } else {
             null
